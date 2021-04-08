@@ -9,8 +9,23 @@
   </head>
   <body>
     <input id="video-input" type="file" placeholder="加载本地视频" />
+
+    <div class="track-container">
+      <div class="track">
+        <div class="track-content"></div>
+        <div
+          class="selector-container"
+          style="border-left-width: 40px; border-right-width: 200px"
+        >
+          <div class="selector">
+            <div id="left-handle" class="handle"></div>
+            <div id="right-handle" class="handle"></div>
+          </div>
+        </div>
+      </div>
+      <!-- <div class="pointer"> -->
+    </div>
     <div id="key-frames"></div>
-    <div class="frames"></div> -->
     <script src="./index.js"></script>
   </body>
 </html>
