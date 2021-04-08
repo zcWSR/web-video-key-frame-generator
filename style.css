@@ -1,0 +1,39 @@
+#video {
+  background: black;
+}
+#key-frames {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.editor {
+  width: 343px;
+  height: 40px;
+  position: relative;
+  background: rgba(0, 102, 255, 0.08);
+}
+#frames,
+.frames {
+  width: 343px;
+  height: 40px;
+  border-radius: 4px;
+  background: green;
+}
+.track {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+}
+.range {
+  mix-blend-mode: overlay;
+  position: absolute;
+  top: 0;
+  height: 100%;
+  left: 20px;
+  right: 20px;
+  background: white;
+}
