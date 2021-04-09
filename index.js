@@ -102,7 +102,7 @@ const getKeyFrames = async (videoEle, frameDuration, process, frameCallback) => 
   return Promise.all(tasks);
 };
 
-const frameList = [];
+let frameList = [];
 
 setKeyframeEle = (url, time) => {
   const img = document.createElement('img');
@@ -117,6 +117,7 @@ const start = async () => {
     const videoEle = await loadVideoFromFile();
     const time = Date.now();
     keyFrameContainerEle.innerHTML = '';
+    frameList = []
     await getKeyFrames(videoEle, 5, 1, setKeyframeEle);
     console.log('end');
     console.log(`${Date.now() - time}ms`);
