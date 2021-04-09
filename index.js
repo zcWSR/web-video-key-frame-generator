@@ -1,8 +1,7 @@
 const videoInput = document.getElementById('video-input');
 const keyFrameContainerEle = document.getElementById('key-frames');
-
-const VIDEO_WIDTH = 500 / 5;
-const VIDEO_HEIGHT = 400 / 5;
+const trackEle = document.getElementById('track');
+const videoContainer = document.getElementById('video-container');
 
 const getVideoBlob = () =>
   new Promise((resolve) => {
@@ -11,36 +10,26 @@ const getVideoBlob = () =>
     };
   });
 
+const waitMetaData = (videoEle) => {
+  return new Promise((resolve) => {
+    videoEle.onloadedmetadata = (e) => resolve(videoEle);
+  });
+};
+
 const loadVideoFromFile = async () => {
   const blob = await getVideoBlob();
   const videoEle = document.createElement('video');
-  videoEle.width = VIDEO_WIDTH;
-  videoEle.height = VIDEO_HEIGHT;
-  videoEle.controls = true;
   videoEle.src = blob;
   videoEle.volume = 0;
   // videoInput.after(videoEle);
-  return new Promise((resolve) => {
-    videoEle.onloadedmetadata = () => resolve(videoEle);
-  });
+  return waitMetaData(videoEle);
 };
 
 const loadVideoFromUrl = (url) => {
   const videoEle = document.createElement('video');
-  videoEle.width = VIDEO_WIDTH;
-  videoEle.height = VIDEO_HEIGHT;
   videoEle.controls = true;
   videoEle.src = url;
-  return videoEle;
-};
-
-const waitMetaData = (videoEle) => {
-  if (videoEle.HAVE_METADATA) {
-    return;
-  }
-  return new Promise((resolve) => {
-    videoEle.onloadedmetadata = (e) => resolve(videoEle);
-  });
+  return waitMetaData(videoEle);
 };
 
 /**
@@ -48,88 +37,67 @@ const waitMetaData = (videoEle) => {
  * @param {HTMLVideoElement} videoEle
  * @param {number} frameDuration
  */
-const getKeyFrames = async (videoEle, frameDuration, process, frameCallback) => {
+const getKeyFrames = async (videoEle, frameCallback) => {
   const canvasEle = document.createElement('canvas');
-  canvasEle.width = VIDEO_WIDTH;
-  canvasEle.height = VIDEO_HEIGHT;
+
   const canvasContext = canvasEle.getContext('2d');
 
-  await waitMetaData(videoEle);
   const duration = videoEle.duration;
-  let isLastFrameLoaded = false;
   /**
    *
    * @param {HTMLVideoElement} ele
    */
-  const addHandler = (ele, offset) =>
-    new Promise(async (resolve) => {
-      videoInput.after(ele);
-      const handleTimeUpdate = () => {
-        if (isLastFrameLoaded && ele.currentTime === duration) {
-        }
-        canvasContext.drawImage(ele, 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT);
-        const base64Url = canvasEle.toDataURL('image/jpeg', 0.5);
-        console.log(ele.currentTime);
-        frameCallback(base64Url, ele.currentTime);
-        if (ele.currentTime < duration) {
-          if (
-            frameDuration * process + ele.currentTime >= duration &&
-            isLastFrameLoaded
-          ) {
-            ele.removeEventListener('timeupdate', handleTimeUpdate);
-            resolve();
-          } else {
-            ele.currentTime += frameDuration * process;
-          }
-          return;
-        } else if (!isLastFrameLoaded && ele.currentTime === duration) {
-          isLastFrameLoaded = true;
-          ele.removeEventListener('timeupdate', handleTimeUpdate);
-          resolve();
-          return;
-        }
+  return new Promise(async (resolve) => {
+    const frameWidth = trackEle.clientWidth / 8;
+    const scale = 2;
+    const heightWidthRate = videoEle.videoHeight / videoEle.videoWidth;
+    const renderWidth = (scale * frameWidth) / Math.min(heightWidthRate, 1);
+    const renderHeight = scale * frameWidth * Math.max(heightWidthRate, 1);
+    videoEle.width = renderWidth;
+    videoEle.height = renderHeight;
+    canvasEle.width = renderWidth;
+    canvasEle.height = renderHeight;
+    videoContainer.appendChild(videoEle);
+    let step = 0;
+    const range = duration / 8;
+    const time = Date.now();
+    const handleTimeUpdate = () => {
+      canvasContext.drawImage(videoEle, 0, 0, renderWidth, renderHeight);
+      const base64Url = canvasEle.toDataURL('image/jpeg');
+      console.log(videoEle.currentTime);
+      frameCallback(base64Url, step);
+      if (step === 7) {
+        videoEle.removeEventListener('timeupdate', handleTimeUpdate);
         resolve();
-      };
-      ele.addEventListener('timeupdate', handleTimeUpdate);
-      ele.currentTime = offset;
-    });
-
-  const tasks = [];
-  for (let i = 0; i < process; i++) {
-    let ele = i === 0 ? videoEle : videoEle.cloneNode();
-    tasks.push(addHandler(ele, i * frameDuration).then(() => ele.remove()));
-  }
-  return Promise.all(tasks);
+        console.log('end');
+        console.log(`${Date.now() - time}ms`);
+        videoEle.remove();
+        return;
+      }
+      step++;
+      videoEle.currentTime = step * range;
+    };
+    videoEle.addEventListener('timeupdate', handleTimeUpdate);
+    videoEle.currentTime = step * range;
+  });
 };
 
-let frameList = [];
-
-setKeyframeEle = (url, time) => {
-  const img = document.createElement('img');
-  img.src = url;
-  img.width = VIDEO_WIDTH / 2;
-  img.height = VIDEO_HEIGHT / 2;
-  frameList.push({ ele: img, time });
+setKeyframeEle = (url, index) => {
+  const ele = document.getElementById(`frame-${index + 1}`);
+  ele.style.backgroundImage = `url(${url})`;
 };
 
-const start = async () => {
+const startFromFile = async () => {
   while (true) {
     const videoEle = await loadVideoFromFile();
-    const time = Date.now();
-    keyFrameContainerEle.innerHTML = '';
-    frameList = []
-    await getKeyFrames(videoEle, 5, 1, setKeyframeEle);
-    console.log('end');
-    console.log(`${Date.now() - time}ms`);
-    frameList
-      .sort((a, b) => a.time - b.time)
-      .map(({ ele }) => {
-        keyFrameContainerEle.appendChild(ele);
-      });
-
-    // const remoteVideoEle = await loadVideoFromUrl('./bad apple.mp4');
-    // getKeyFrames(remoteVideoEle, 5, setKeyframeEle);
+    await getKeyFrames(videoEle, setKeyframeEle);
   }
 };
 
-start();
+const startFromUrl = async () => {
+  const videoEle = await loadVideoFromUrl('./3分39秒版.mp4');
+  await getKeyFrames(videoEle, setKeyframeEle);
+};
+
+startFromFile();
+// startFromUrl();
