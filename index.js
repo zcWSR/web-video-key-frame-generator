@@ -6,9 +6,9 @@ const VIDEO_HEIGHT = 400 / 5;
 
 const getVideoBlob = () =>
   new Promise((resolve) => {
-    videoInput.addEventListener('change', (e) => {
+    videoInput.onchange = (e) => {
       resolve(URL.createObjectURL(e.target.files[0]));
-    });
+    };
   });
 
 const loadVideoFromFile = async () => {
@@ -63,7 +63,7 @@ const getKeyFrames = async (videoEle, frameDuration, process, frameCallback) => 
    */
   const addHandler = (ele, offset) =>
     new Promise(async (resolve) => {
-      // videoInput.after(ele);
+      videoInput.after(ele);
       const handleTimeUpdate = () => {
         if (isLastFrameLoaded && ele.currentTime === duration) {
         }
@@ -97,7 +97,7 @@ const getKeyFrames = async (videoEle, frameDuration, process, frameCallback) => 
   const tasks = [];
   for (let i = 0; i < process; i++) {
     let ele = i === 0 ? videoEle : videoEle.cloneNode();
-    tasks.push(addHandler(ele, i * frameDuration));
+    tasks.push(addHandler(ele, i * frameDuration).then(() => ele.remove()));
   }
   return Promise.all(tasks);
 };
@@ -113,18 +113,22 @@ setKeyframeEle = (url, time) => {
 };
 
 const start = async () => {
-  const videoEle = await loadVideoFromFile();
-  const time = Date.now();
-  await getKeyFrames(videoEle, 5, 2, setKeyframeEle);
-  console.log('end');
-  console.log(`${Date.now() - time}ms`);
-  frameList
-    .sort((a, b) => a.time - b.time)
-    .map(({ ele }) => {
-      keyFrameContainerEle.appendChild(ele);
-    });
-  // const remoteVideoEle = await loadVideoFromUrl('./bad apple.mp4');
-  // getKeyFrames(remoteVideoEle, 5, setKeyframeEle);
+  while (true) {
+    const videoEle = await loadVideoFromFile();
+    const time = Date.now();
+    keyFrameContainerEle.innerHTML = '';
+    await getKeyFrames(videoEle, 5, 1, setKeyframeEle);
+    console.log('end');
+    console.log(`${Date.now() - time}ms`);
+    frameList
+      .sort((a, b) => a.time - b.time)
+      .map(({ ele }) => {
+        keyFrameContainerEle.appendChild(ele);
+      });
+
+    // const remoteVideoEle = await loadVideoFromUrl('./bad apple.mp4');
+    // getKeyFrames(remoteVideoEle, 5, setKeyframeEle);
+  }
 };
 
 start();

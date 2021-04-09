@@ -51,8 +51,22 @@
   bottom: -2px;
   border: 2px solid #0066ff;
   border-radius: 6px;
-  box-shadow: 5px 0 0 0px #0066ff, -5px 0 0 0px #0066ff;
   cursor: -webkit-grab;
+}
+.selector::before,
+.selector::after {
+  position: absolute;
+  display: block;
+  content: '';
+  height: 2px;
+  width: 100%;
+  background: #0066ff;
+}
+.selector::before {
+  top: -2px;
+}
+.selector::after {
+  bottom: -2px;
 }
 .selector:active {
   cursor: -webkit-grabbing;
@@ -63,9 +77,10 @@
   align-items: center;
   justify-content: center;
   position: absolute;
-  top: 0;
-  height: 100%;
+  top: -2px;
+  height: calc(100% + 4px);
   width: 7px;
+  background: #0066ff;
   cursor: col-resize;
 }
 .handle::before {
@@ -78,7 +93,11 @@
 }
 #left-handle {
   left: -7px;
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
 }
 #right-handle {
   right: -7px;
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 6px;
 }
